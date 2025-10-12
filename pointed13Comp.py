@@ -3,9 +3,9 @@ import itertools
 import GluingClassesJComp as gcjc
 import pickle
 
-deg9graphsComp = nx.read_graph6("k3k5e_9.g6")
-deg8graphsComp = nx.read_graph6("k3k5e_8.g6")
-deg7graphsComp = nx.read_graph6("k3k5e_7.g6")
+deg9graphsComp = nx.read_graph6("ref_graphs/k3k5e_9.g6")
+deg8graphsComp = nx.read_graph6("ref_graphs/k3k5e_8.g6")
+deg7graphsComp = nx.read_graph6("ref_graphs/k3k5e_7.g6")
 
 deg9graphs = []
 deg8graphs = []
@@ -24,7 +24,7 @@ shared_neighborhood7 = set()
 
 num_9_pointed_graphs = num_8_pointed_graphs = num_7_pointed_graphs = 0
 
-graphs = nx.read_graph6("neighborhood.g6")
+graphs = nx.read_graph6("ref_graphs/neighborhood.g6")
 
 for i in range(len(graphs)):
     G = graphs[i]

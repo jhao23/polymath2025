@@ -3,11 +3,11 @@ import itertools
 import pickle
 import GluingClassesJ as gcj
 
-graphs = nx.read_graph6("k4ek5_15.g6")
+graphs = nx.read_graph6("ref_graphs/k4ek5_15.g6")
 
-deg4graphs = nx.read_graph6("k5k3e_4.g6")
-deg5graphs = nx.read_graph6("k5k3e_5.g6")
-deg6graphs = nx.read_graph6("k5k3e_6.g6")
+deg4graphs = nx.read_graph6("ref_graphs/k5k3e_4.g6")
+deg5graphs = nx.read_graph6("ref_graphs/k5k3e_5.g6")
+deg6graphs = nx.read_graph6("ref_graphs/k5k3e_6.g6")
 
 shared_neighborhood_4 = set()
 shared_neighborhood_5 = set()

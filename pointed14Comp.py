@@ -1,11 +1,11 @@
 import networkx as nx
 import pickle
 
-deg6graphsComp = nx.read_graph6("k3k5e_6.g6")
-deg7graphsComp = nx.read_graph6("k3k5e_7.g6")
-deg8graphsComp = nx.read_graph6("k3k5e_8.g6")
-deg9graphsComp = nx.read_graph6("k3k5e_9.g6")
-deg10graphsComp = nx.read_graph6("k3k5e_10.g6")
+deg6graphsComp = nx.read_graph6("ref_graphs/k3k5e_6.g6")
+deg7graphsComp = nx.read_graph6("ref_graphs/k3k5e_7.g6")
+deg8graphsComp = nx.read_graph6("ref_graphs/k3k5e_8.g6")
+deg9graphsComp = nx.read_graph6("ref_graphs/k3k5e_9.g6")
+deg10graphsComp = nx.read_graph6("ref_graphs/k3k5e_10.g6")
 
 deg6graphs = []
 deg7graphs = []
@@ -32,7 +32,7 @@ shared_neighborhood10 = set()
 
 num_6_pointed_graphs = num_7_pointed_graphs = num_8_pointed_graphs = num_9_pointed_graphs = num_10_pointed_graphs = 0
 
-graphs = nx.read_graph6("neighborhood2.g6")
+graphs = nx.read_graph6("ref_graphs/neighborhood2.g6")
 
 for i in range(len(graphs)):
     G = graphs[i]
