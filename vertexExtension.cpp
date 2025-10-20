@@ -12,12 +12,13 @@
 #include <vector>
 #include <bit>
 #include <bitset>
-#include <algorithm>
 #include <chrono>
+#include <omp.h>
 
 using namespace std;
 
 // Note!! : This does require compiling this in C++20 or later because bit_width() and popcount() requires it
+// Should be compiled as "g++ vertexExtension.cpp -std=c++20 -fopenmp"
 
 struct Subgraph{
     int type;
@@ -60,6 +61,7 @@ vector<int> bit_to_index(unsigned int vertices)
     return indexVector;
 }
 
+// Returns the complement of a graph (the graph with flipped edges)
 vector<unsigned int> complement(vector<unsigned int> &graph)
 {
     vector<unsigned int> compGraph;
@@ -156,6 +158,7 @@ void max_clique(unsigned int r, unsigned int p, unsigned int x, vector<Subgraph>
     }
 }
 
+// This is also the Bron-Kerbosch algorithm but modified to also detect J_n graphs.
 void max_set(unsigned int r, unsigned int p, unsigned int x, vector<Subgraph> &maxSubgraphs, vector<unsigned int> &max_sets_n, vector<unsigned int> &graph, int graph_size, int target_size)
 {
     if (p == 0 && x == 0)
@@ -219,7 +222,7 @@ vector<Subgraph> max_subgraphs_last(vector<unsigned int> &old_graph, vector<unsi
     return newsubgraphs;
 }
 
-void vertex_extend(vector<vector<unsigned int>> &intervals, vector<Subgraph> &max_subgraphs, vector<unsigned int> &graph, int size)
+void vertex_extend(vector<vector<unsigned int>> &intervals, vector<Subgraph> &max_subgraphs, vector<unsigned int> &graph, int size, ofstream &logFile)
 {
     for (Subgraph &subgraph : max_subgraphs)
     {
@@ -228,6 +231,8 @@ void vertex_extend(vector<vector<unsigned int>> &intervals, vector<Subgraph> &ma
             break;
         }
         vector<vector<unsigned int>> new_intervals;
+
+        // K5 case
         if (subgraph.type == 0)
         {
             for (vector<unsigned int> &interval : intervals)
@@ -260,6 +265,8 @@ void vertex_extend(vector<vector<unsigned int>> &intervals, vector<Subgraph> &ma
             }
             intervals = new_intervals;
         }
+
+        // Complement K5 case
         else if (subgraph.type == 1)
         {
             for (vector<unsigned int> &interval : intervals)
@@ -311,6 +318,8 @@ void vertex_extend(vector<vector<unsigned int>> &intervals, vector<Subgraph> &ma
             }
             intervals = new_intervals;
         }
+
+        // Complement J5 case
         else
         {
             for (vector<unsigned int> &interval : intervals)
@@ -356,60 +365,76 @@ void vertex_extend(vector<vector<unsigned int>> &intervals, vector<Subgraph> &ma
                 new_graph.push_back( (graph[i] << 1) | ((gluing & (1 << (size - i - 1))) >> (size - i - 1)) );
             }
             new_graph.push_back(gluing << 1);
-            
+           
+            # pragma omp critical
             if (new_graph.size() >= 29)
             {
                 cout << "Size: " << new_graph.size() << " Graph: "; //print the graph or something
+                logFile << "Size: " << new_graph.size() << " Graph: ";
                 for (unsigned int row : new_graph)
                 {
                     cout << row << " ";
+                    logFile << row << " ";
                 }
                 cout << "\n";
+                cout << endl;
             }
             vector<vector<unsigned int>> interval_copy = intervals;
             vector<Subgraph> new_subgraphs = max_subgraphs_last(graph, new_graph, size + 1);
-            vertex_extend(interval_copy, new_subgraphs, new_graph, size + 1);
+            vertex_extend(interval_copy, new_subgraphs, new_graph, size + 1, logFile);
         }
     }
 }
 
 int main()
 {
-    ifstream graphFile;
-    graphFile.open("14-graphsComp/7-graphs/14-7-0VEgraphs.g6"); // <- put whatever name of the file/path which has your graphs
+    omp_set_num_threads(10);
+    ofstream logFile;
+    logFile.open("extensionLog.txt");
 
-    string graph6string;
-    int index = 0;
-
-    const auto start{chrono::steady_clock::now()};
-
-    while (getline(graphFile, graph6string))
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (int i = 1806; i >= 0; i--)
     {
-        vector<unsigned int> graph = decodeG6(graph6string.substr(10));
-        // Cutting off >>graph6<< header on each line. Otherwise, use graph6string instead of graph6string.substr(10) if no header
-        int graph_size = graph.size();
-        vector<vector<unsigned int>> intervals = {{0, (1 << graph_size) - 1}};
-        vector<Subgraph> subgraphs = max_subgraphs(graph, graph_size);
-        vertex_extend(intervals, subgraphs, graph, graph_size);
-        if (index % 10000 == 0)
-        {
-            cout << "Index " << index << " done.\n";
-        }
-        index++;
-    }
+        string filename = "14-graphsComp/9-graphs/14-9-" + to_string(i) + "VEgraphs.g6";
+        ifstream graphFile;
+        graphFile.open(filename); // <- put whatever name of the file/path which has your graphs in filename
 
-    const auto finish{chrono::steady_clock::now()};
-    const chrono::duration<double> elapsed_seconds{finish - start};
-    cout << "Elapsed Time: " << elapsed_seconds << "\n";
+        string graph6string;
+        int index = 0;
+
+        const auto start{chrono::steady_clock::now()};
+        if (graphFile.good())
+        {
+            while (getline(graphFile, graph6string))
+            {
+                vector<unsigned int> graph = decodeG6(graph6string.substr(10));
+                // Cutting off unwanted >>graph6<< header on each line. Otherwise, use graph6string instead of graph6string.substr(10) if no header
+                
+                // Setup work for the vertex_extend function
+                int graph_size = graph.size();
+                vector<vector<unsigned int>> intervals = {{0, (1 << graph_size) - 1}};
+                vector<Subgraph> subgraphs = max_subgraphs(graph, graph_size);
+
+                vertex_extend(intervals, subgraphs, graph, graph_size, logFile);
+                #pragma omp critical
+                if (index % 100000 == 0) // <= This is just a progress indicator to see how far along a thread is in a file
+                {
+                    cout << "File " << i << " Index " << index << " done.\n";
+                    logFile << "File " << i << " Index " << index << " done." << endl;
+                }
+                index++;
+            }
+        }
+
+        const auto finish{chrono::steady_clock::now()};
+        const chrono::duration<double> elapsed_seconds{finish - start};
+        #pragma omp critical
+        {
+            cout << "File " << i << ", Elapsed Time: " << elapsed_seconds << "\n";
+            logFile << "File " << i << ", Elapsed Time: " << elapsed_seconds << endl;
+        }
+    }
+    logFile.close();
 
     return 0;
 }
-/*
-FlO[O
-Fhogg
-FgqPg
-FlgGg
-FhMIG
-FhcYG
-FhELO
-FtTgO */

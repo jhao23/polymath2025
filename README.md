@@ -11,7 +11,8 @@ Running the "pointed" and "gluing" python programs will produce many hundreds of
 I recommend that you set aside a lot of memory and break the computation into portions if you are to run the programs.
 
 ## Dependencies: 
-The programs will depend on the external packages networkx, pynauty, and parsl. The vertex extension code is also compiled with C++20.
+The Python programs depend on the external packages networkx, pynauty, and parsl. The vertex extension code is also compiled with C++20 and OpenMP.
+In particular the vertex extension code can be compiled with "g++ vertexExtension.cpp -fopenmp -std=c++20".
 
 The reference graphs were obtained from Robert Fidytek's dataset of Ramsey graphs and code from Ash Kiel's graph enumeration algorithm (https://github.com/AshKila/J4K5Enumeration).
 
